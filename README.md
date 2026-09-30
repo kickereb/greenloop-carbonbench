@@ -162,14 +162,12 @@ Use `--max-runs 5` for a short shakedown. Use `--model qwen2.5:3b` to isolate on
 `powermetrics` needs elevated permission. Give permission only to the collector. Do not run the Python process or Ollama as root.
 
 ```bash
-sudo -v
-
 caffeinate -dimsu carbonbench run \
   --config configs/pilot.json \
   --database results/pilot.sqlite
 ```
 
-The Python process starts `sudo -n /usr/bin/powermetrics`. It does not store a password. If the cached permission expires before startup, the tool stops with an explanation.
+CarbonBench runs `sudo -v` on the controlling terminal and asks for your normal macOS login password before starting `sudo -n /usr/bin/powermetrics`. Nothing is displayed while you type the password. CarbonBench never reads or stores it, and the Python process and Ollama remain unprivileged.
 
 For a first instrumented check, copy `configs/pilot.json`, keep one small model, use 6–10 prompts, and use 10 repeats. Do not start the full matrix until the within-cell coefficient of variation is acceptable.
 
@@ -177,10 +175,10 @@ The repository includes the preregistered 60-request gate:
 
 ```bash
 carbonbench plan --config configs/shakedown.json
-sudo -v
 caffeinate -dimsu carbonbench run \
   --config configs/shakedown.json \
   --database results/shakedown.sqlite
+carbonbench verify --database results/shakedown.sqlite
 carbonbench analyze \
   --database results/shakedown.sqlite \
   --output results/shakedown-report
@@ -251,6 +249,44 @@ python -m unittest discover -s tests -v
 ```
 
 The suite tests plist parsing, arbitrary stream boundaries, exact power-window overlap, negative baseline corrections, graders, config validation, streamed Ollama usage, database completeness, and held-out estimator fitting.
+
+## Publish to GitHub
+
+The project is already a local Git repository on branch `main`. Generated results, raw telemetry, downloaded source data, virtual environments, and Python build products are excluded by `.gitignore`.
+
+You can create and push a repository directly from Terminal with GitHub CLI; creating it in the GitHub website first is optional. Check the account currently selected for `github.com`:
+
+```bash
+gh auth status --hostname github.com
+```
+
+Create a private repository under the authenticated account and push the existing `main` branch:
+
+```bash
+GH_HOST=github.com gh repo create greenloop-carbonbench \
+  --private \
+  --source=. \
+  --remote=origin \
+  --push
+```
+
+Use `--public` instead of `--private` only if you intend to publish the code and bundled prompt material publicly.
+
+If you prefer to create the empty repository on GitHub first, do not initialize it with a README, licence, or `.gitignore`, because those files already exist locally. Then connect and push it, replacing `YOUR_GITHUB_USERNAME` with your account name:
+
+```bash
+git remote add origin https://github.com/YOUR_GITHUB_USERNAME/greenloop-carbonbench.git
+git push -u origin main
+```
+
+Before every later push:
+
+```bash
+git status
+git add <files-you-changed>
+git commit -m "Describe the change"
+git push
+```
 
 ## Primary references
 

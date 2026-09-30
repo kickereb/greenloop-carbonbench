@@ -327,7 +327,10 @@ class PowerMetricsCollector:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 bufsize=0,
-                start_new_session=True,
+                # Keep the controlling terminal so macOS sudo can reuse the
+                # credential established above. A separate process group still
+                # lets stop() interrupt sudo and powermetrics together.
+                preexec_fn=os.setpgrp,
             )
         except (FileNotFoundError, PermissionError) as exc:
             raise EnergyError(f"Could not start powermetrics: {exc}") from exc
