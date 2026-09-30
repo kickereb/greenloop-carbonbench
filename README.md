@@ -11,6 +11,8 @@ The experiment does **not** prove the energy or carbon footprint of a closed clo
 
 The detailed preregistration is in [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md). The field definitions and energy method are in [docs/TELEMETRY_AND_CARBON.md](docs/TELEMETRY_AND_CARBON.md). The completed local smoke test is in [docs/VALIDATION_LOG.md](docs/VALIDATION_LOG.md).
 
+The first instrumented 60-request shakedown is documented in [docs/results/SHAKEDOWN_RUN_1.md](docs/results/SHAKEDOWN_RUN_1.md). It completed without request or telemetry failures, but did not pass the preregistered repeatability and memory-pressure gates; the full pilot has therefore not started.
+
 ## What the tool does
 
 - Downloads a fixed 100-prompt suite from pinned GSM8K and SQuAD revisions.
