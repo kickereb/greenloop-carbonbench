@@ -74,4 +74,22 @@ Before repeating the shakedown:
 2. Connect stable AC power and stop unrelated CPU-, GPU-, and memory-intensive applications.
 3. Disable downloads, indexing-heavy work, and background model activity during measurement.
 4. Confirm that no unrelated Ollama model is resident.
-5. Repeat the same frozen configuration and require both the repeatability and pageout gates to pass before the core pilot.
+5. Repeat the same frozen configuration in a **new database** and require both the repeatability and pageout gates to pass before the core pilot. Reusing `results/shakedown.sqlite` would resume the completed first matrix and skip every existing cell.
+
+After restarting, use:
+
+```bash
+cd /Users/evam/Documents/ChatGPT/Greenloop
+source .venv/bin/activate
+carbonbench doctor
+
+caffeinate -dimsu carbonbench run \
+  --config configs/shakedown.json \
+  --database results/shakedown-2.sqlite
+
+carbonbench verify --database results/shakedown-2.sqlite
+
+carbonbench analyze \
+  --database results/shakedown-2.sqlite \
+  --output results/shakedown-2-report
+```

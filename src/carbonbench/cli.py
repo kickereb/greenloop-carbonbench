@@ -17,7 +17,7 @@ from .db import StoreError
 from .energy import EnergyError, parse_plist_stream
 from .ollama import OllamaClient, OllamaError, pull_models
 from .prompts import PromptError, load_prompts
-from .runner import RunError, host_snapshot, run_experiment
+from .runner import MAX_PREFLIGHT_SWAP_BYTES, RunError, host_snapshot, run_experiment
 from .util import file_sha256
 
 
@@ -45,16 +45,20 @@ def command_doctor(args: argparse.Namespace) -> int:
         warnings.append("Ollama API is unavailable")
     if sys.platform == "darwin" and not snapshot["powermetrics_executable"]:
         warnings.append("powermetrics is unavailable")
-    if snapshot["powermetrics_sudo_cached"] is False:
-        warnings.append("Run `sudo -v` immediately before a powermetrics experiment")
     env = snapshot["environment"]
     if env.get("OLLAMA_NUM_PARALLEL") not in (None, "1"):
         warnings.append("Set OLLAMA_NUM_PARALLEL=1 before starting Ollama for serial benchmarking")
     power_source = snapshot.get("power_source") or ""
-    if re.search(r"\bcharging\b", power_source.lower()):
+    power_source_lower = power_source.lower()
+    if re.search(r"\bcharging\b", power_source_lower) and "not charging" not in power_source_lower:
         warnings.append("Battery is charging; wall-power validation would include charging energy")
-    elif "battery power" in power_source.lower():
+    elif "battery power" in power_source_lower:
         warnings.append("The Mac is on battery; use stable AC power for the multi-hour core experiment")
+    used_swap = snapshot.get("swap_used_bytes")
+    if isinstance(used_swap, int) and used_swap > MAX_PREFLIGHT_SWAP_BYTES:
+        warnings.append(
+            f"macOS is using {used_swap / 1024**3:.2f} GiB of swap; restart before an instrumented run"
+        )
     if disk.free < 35 * 1024**3:
         warnings.append("Less than 35 GiB is free; the six core model files may not fit safely")
     snapshot["warnings"] = warnings

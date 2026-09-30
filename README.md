@@ -72,6 +72,8 @@ Check the host and Ollama:
 carbonbench doctor
 ```
 
+For instrumented runs, `doctor` also reports current macOS swap use. CarbonBench refuses to start `powermetrics` measurements when more than 1 GiB of swap is in use, because pre-existing memory pressure can introduce pageouts and invalidate the repeatability result. Restart the Mac and close memory-intensive applications before retrying.
+
 Rebuild the exact prompt suite if needed:
 
 ```bash
@@ -187,6 +189,20 @@ carbonbench analyze \
 ```
 
 It runs three representative models against one long-prefill probe and one long-decode probe for ten rounds.
+
+The commands above name the first shakedown artifacts. A repeatability rerun must use a fresh database; reusing the completed database would correctly resume it and skip all 60 existing cells. After restarting the Mac and confirming low swap with `carbonbench doctor`, run shakedown 2 as:
+
+```bash
+caffeinate -dimsu carbonbench run \
+  --config configs/shakedown.json \
+  --database results/shakedown-2.sqlite
+
+carbonbench verify --database results/shakedown-2.sqlite
+
+carbonbench analyze \
+  --database results/shakedown-2.sqlite \
+  --output results/shakedown-2-report
+```
 
 Keep these conditions fixed:
 

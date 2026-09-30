@@ -4,6 +4,7 @@ import hashlib
 import os
 import platform
 import random
+import re
 import subprocess
 import sys
 import time
@@ -29,6 +30,20 @@ class RunOutcome:
     success: bool
     accepted: bool
     primary_eligible: bool
+
+
+MAX_PREFLIGHT_SWAP_BYTES = 1024**3
+
+
+def swap_used_bytes(value: Optional[str]) -> Optional[int]:
+    """Parse macOS `sysctl vm.swapusage` output into used bytes."""
+    if not value:
+        return None
+    match = re.search(r"\bused\s*=\s*([0-9.]+)([KMGT])", value, re.IGNORECASE)
+    if not match:
+        return None
+    scale = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}[match.group(2).upper()]
+    return int(float(match.group(1)) * scale)
 
 
 def _command_output(command: List[str]) -> Optional[str]:
@@ -57,6 +72,8 @@ def host_snapshot(client: Optional[OllamaClient] = None) -> Dict[str, Any]:
         snapshot["cpu_brand"] = _command_output(["sysctl", "-n", "machdep.cpu.brand_string"])
         snapshot["cpu_cores"] = _command_output(["sysctl", "-n", "hw.ncpu"])
         snapshot["memory_bytes"] = _command_output(["sysctl", "-n", "hw.memsize"])
+        snapshot["swapusage"] = _command_output(["sysctl", "vm.swapusage"])
+        snapshot["swap_used_bytes"] = swap_used_bytes(snapshot["swapusage"])
         snapshot["power_source"] = _command_output(["pmset", "-g", "batt"])
         snapshot["power_settings"] = _command_output(["pmset", "-g", "custom"])
     if client is not None:
@@ -175,6 +192,18 @@ def run_experiment(
             "An energy-mode override would change the protocol without changing its identity. "
             "Copy the config and change energy.mode instead."
         )
+    snapshot = host_snapshot(client)
+    used_swap = snapshot.get("swap_used_bytes")
+    if (
+        energy_mode == "powermetrics"
+        and isinstance(used_swap, int)
+        and used_swap > MAX_PREFLIGHT_SWAP_BYTES
+    ):
+        raise RunError(
+            f"Preflight failed: macOS is using {used_swap / 1024**3:.2f} GiB of swap "
+            f"(limit {MAX_PREFLIGHT_SWAP_BYTES / 1024**3:.0f} GiB). Restart the Mac, "
+            "close memory-intensive applications, and run `carbonbench doctor` before retrying."
+        )
     configured_names = {model.name for model in config.models}
     initially_loaded = client.ps()
     unrelated_loaded = [
@@ -200,7 +229,6 @@ def run_experiment(
         else NullCollector()
     )
     store = Store(db_path)
-    snapshot = host_snapshot(client)
     store.register_experiment(config, snapshot)
     store.register_models(config.config_hash, config.models)
     store.register_prompts(config.config_hash, prompts + [WARMUP_PROMPT])
