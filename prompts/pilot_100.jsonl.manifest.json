@@ -1,0 +1,27 @@
+{
+  "counts": {
+    "controlled": 20,
+    "gsm8k": 35,
+    "squad": 45
+  },
+  "output_filename": "pilot_100.jsonl",
+  "prompt_file_sha256": "74f2f26bfb839b8d001147ac51081e2623cc20bec9242070a28950ecb090e966",
+  "raw_sources": {
+    "gsm8k": {
+      "cached_filename": "gsm8k-test.jsonl",
+      "commit": "3101c7d5072418e28b9008a6636bde82a006892c",
+      "license": "MIT",
+      "sha256": "3730d312f6e3440559ace48831e51066acaca737f6eabec99bccb9e4b3c39d14",
+      "url": "https://raw.githubusercontent.com/openai/grade-school-math/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl"
+    },
+    "squad": {
+      "cached_filename": "squad-dev-v1.1.json",
+      "commit": "eee5fdbf62f8613a7812b03419e6b29617b74fd1",
+      "license": "MIT",
+      "sha256": "95aa6a52d5d6a735563366753ca50492a658031da74f301ac5238b03966972c9",
+      "url": "https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/eee5fdbf62f8613a7812b03419e6b29617b74fd1/dataset/dev-v1.1.json"
+    }
+  },
+  "seed": 20260928,
+  "total": 100
+}

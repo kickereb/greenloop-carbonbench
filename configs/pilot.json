@@ -1,0 +1,77 @@
+{
+  "name": "carbonbench-m5pro-pilot-v1",
+  "prompt_file": "../prompts/pilot_100.jsonl",
+  "models": [
+    {
+      "name": "qwen2.5:3b",
+      "family": "qwen2.5",
+      "parameters_b": 3.09,
+      "active_parameters_b": 3.09,
+      "quantization": "Q4_K_M",
+      "role": "fit",
+      "reasoning": false
+    },
+    {
+      "name": "qwen2.5:7b",
+      "family": "qwen2.5",
+      "parameters_b": 7.62,
+      "active_parameters_b": 7.62,
+      "quantization": "Q4_K_M",
+      "role": "fit",
+      "reasoning": false
+    },
+    {
+      "name": "qwen2.5:14b",
+      "family": "qwen2.5",
+      "parameters_b": 14.8,
+      "active_parameters_b": 14.8,
+      "quantization": "Q4_K_M",
+      "role": "fit",
+      "reasoning": false
+    },
+    {
+      "name": "llama3.2:3b",
+      "family": "llama3.2",
+      "parameters_b": 3.21,
+      "active_parameters_b": 3.21,
+      "quantization": "Q4_K_M",
+      "role": "holdout",
+      "reasoning": false
+    },
+    {
+      "name": "gemma3:12b",
+      "family": "gemma3",
+      "parameters_b": 12.2,
+      "active_parameters_b": 12.2,
+      "quantization": "Q4_K_M",
+      "role": "holdout",
+      "reasoning": false
+    },
+    {
+      "name": "granite3.1-moe:3b",
+      "family": "granite3.1-moe",
+      "parameters_b": 3.3,
+      "active_parameters_b": null,
+      "quantization": "Q4_K_M",
+      "role": "descriptive",
+      "reasoning": false
+    }
+  ],
+  "repetitions": 3,
+  "warmups_per_model": 2,
+  "seed": 20260928,
+  "temperature": 0,
+  "num_predict": 256,
+  "num_ctx": 4096,
+  "keep_alive": "30m",
+  "request_timeout_seconds": 900,
+  "cooldown_seconds": 10,
+  "redact_responses": false,
+  "energy": {
+    "mode": "powermetrics",
+    "sample_interval_ms": 500,
+    "baseline_seconds": 15,
+    "grid_intensity_g_per_kwh": null,
+    "minimum_sample_coverage": 0.9
+  }
+}

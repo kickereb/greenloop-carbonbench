@@ -1,0 +1,32 @@
+{
+  "name": "greenloop-smoke-m5pro",
+  "prompt_file": "../prompts/smoke.jsonl",
+  "models": [
+    {
+      "name": "gemma4:26b",
+      "family": "gemma4",
+      "parameters_b": 26.0,
+      "active_parameters_b": 26.0,
+      "quantization": "unknown-local-manifest-is-authoritative",
+      "role": "descriptive",
+      "reasoning": false
+    }
+  ],
+  "repetitions": 1,
+  "warmups_per_model": 1,
+  "seed": 20260928,
+  "temperature": 0,
+  "num_predict": 64,
+  "num_ctx": 4096,
+  "keep_alive": "30m",
+  "request_timeout_seconds": 900,
+  "cooldown_seconds": 0,
+  "redact_responses": false,
+  "energy": {
+    "mode": "none",
+    "sample_interval_ms": 500,
+    "baseline_seconds": 0,
+    "grid_intensity_g_per_kwh": null,
+    "minimum_sample_coverage": 0.9
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "name": "carbonbench-m5pro-repeatability-shakedown-v1",
+  "prompt_file": "../prompts/pilot_100.jsonl",
+  "prompt_ids": [
+    "controlled-retrieval-007",
+    "controlled-decode-000"
+  ],
+  "models": [
+    {
+      "name": "qwen2.5:3b",
+      "family": "qwen2.5",
+      "parameters_b": 3.09,
+      "active_parameters_b": 3.09,
+      "quantization": "Q4_K_M",
+      "role": "fit",
+      "reasoning": false
+    },
+    {
+      "name": "qwen2.5:14b",
+      "family": "qwen2.5",
+      "parameters_b": 14.8,
+      "active_parameters_b": 14.8,
+      "quantization": "Q4_K_M",
+      "role": "fit",
+      "reasoning": false
+    },
+    {
+      "name": "gemma3:12b",
+      "family": "gemma3",
+      "parameters_b": 12.2,
+      "active_parameters_b": 12.2,
+      "quantization": "Q4_K_M",
+      "role": "holdout",
+      "reasoning": false
+    }
+  ],
+  "repetitions": 10,
+  "warmups_per_model": 2,
+  "seed": 20260928,
+  "temperature": 0,
+  "num_predict": 256,
+  "num_ctx": 4096,
+  "keep_alive": "30m",
+  "request_timeout_seconds": 900,
+  "cooldown_seconds": 10,
+  "redact_responses": false,
+  "energy": {
+    "mode": "powermetrics",
+    "sample_interval_ms": 500,
+    "baseline_seconds": 10,
+    "grid_intensity_g_per_kwh": null,
+    "minimum_sample_coverage": 0.9
+  }
+}
