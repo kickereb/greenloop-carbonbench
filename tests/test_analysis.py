@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -93,9 +94,51 @@ class AnalysisTests(unittest.TestCase):
                         }
                     )
                     index += 1
+            store.insert_run(
+                {
+                    "run_key": "rejected-cache-attempt",
+                    "cell_key": "rejected-cache-cell",
+                    "attempt_index": 0,
+                    "accepted": 0,
+                    "primary_eligible": 0,
+                    "config_hash": config.config_hash,
+                    "session_id": "session",
+                    "schedule_index": index,
+                    "round_index": 0,
+                    "model_name": config.models[0].name,
+                    "prompt_id": prompts[0].id,
+                    "is_warmup": 0,
+                    "seed": 1,
+                    "requested_num_predict": 64,
+                    "status": "success",
+                    "started_at_utc": utc_now(),
+                    "ended_at_utc": utc_now(),
+                    "start_monotonic_s": float(index),
+                    "end_monotonic_s": float(index + 1),
+                    "wall_duration_s": 1.0,
+                    "prompt_eval_count": 100,
+                    "prompt_eval_cached_count": 24,
+                    "eval_count": 20,
+                    "quality_score": 1.0,
+                    "energy_method": "powermetrics",
+                    "power_sample_count": 2,
+                    "power_invalid_sample_count": 0,
+                    "power_covered_seconds": 1.0,
+                    "power_sample_coverage": 1.0,
+                    "gross_soc_j": 1.0,
+                    "incremental_soc_j": 0.9,
+                    "gross_soc_wh": 1.0 / 3600,
+                    "incremental_soc_wh": 0.9 / 3600,
+                    "flags_json": '["prompt_cache_hit"]',
+                }
+            )
             store.close()
             verification = verify_database(db_path)
             self.assertTrue(verification["checks"]["complete_matrix"])
+            self.assertEqual(verification["cache_hits"], 1)
+            self.assertFalse(verification["checks"]["no_prompt_cache_hits"])
+            with sqlite3.connect(str(db_path)) as connection:
+                connection.execute("DELETE FROM runs WHERE run_key='rejected-cache-attempt'")
             output = root / "report"
             summary = analyze_database(db_path, output)
             self.assertIsNotNone(summary["estimator"])

@@ -13,6 +13,8 @@ The detailed preregistration is in [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT
 
 The first instrumented 60-request shakedown is documented in [docs/results/SHAKEDOWN_RUN_1.md](docs/results/SHAKEDOWN_RUN_1.md). It completed without request or telemetry failures, but did not pass the preregistered repeatability and memory-pressure gates; the full pilot has therefore not started.
 
+The second shakedown is documented in [docs/results/SHAKEDOWN_RUN_2.md](docs/results/SHAKEDOWN_RUN_2.md). It isolated Ollama 0.35's historical prompt cache as a source of both prompt-token reuse and several gigabytes of swap. CarbonBench now verifies that the historical cache is disabled and scrubs the active KV-cache slot before every measured request.
+
 ## What the tool does
 
 - Downloads a fixed 100-prompt suite from pinned GSM8K and SQuAD revisions.
@@ -71,6 +73,34 @@ Check the host and Ollama:
 ```bash
 carbonbench doctor
 ```
+
+### Disable Ollama's historical prompt cache
+
+Ollama 0.33 and later can retain several gigabytes of prior prompt states in
+RAM. That both creates memory pressure on a 24 GB Mac and makes later requests
+reuse prompt tokens. CarbonBench keeps ordinary model-specific chat templates,
+but scrubs the active KV-cache slot before every measured request and requires
+the separate historical cache to be disabled.
+
+If you run the macOS Ollama app, execute this once after each login or reboot,
+before the benchmark:
+
+```bash
+launchctl setenv LLAMA_ARG_CACHE_RAM 0
+launchctl setenv OLLAMA_NUM_PARALLEL 1
+osascript -e 'quit app "Ollama"'
+open -a Ollama
+
+until curl -fsS http://127.0.0.1:11434/api/version >/dev/null; do
+  sleep 1
+done
+```
+
+These commands do not need `sudo`. The setting is inherited when Ollama is
+reopened and lasts for the current macOS login session. CarbonBench performs a
+short, unmeasured cache preflight before starting `powermetrics`; it stops with
+an explanation if historical prompt restoration is still active. This prevents
+an incorrectly configured hour-long run from producing another invalid matrix.
 
 For instrumented runs, `doctor` also reports current macOS swap use. CarbonBench refuses to start `powermetrics` measurements when more than 1 GiB of swap is in use, because pre-existing memory pressure can introduce pageouts and invalidate the repeatability result. Restart the Mac and close memory-intensive applications before retrying.
 

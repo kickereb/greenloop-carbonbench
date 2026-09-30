@@ -54,7 +54,40 @@ class OllamaTests(unittest.TestCase):
         self.assertEqual(result.eval_count, 2)
         self.assertIsNotNone(result.first_token_duration_s)
 
+    def test_raw_generate_sets_raw_request_flag(self):
+        client = OllamaClient()
+        payloads = []
+
+        class Response:
+            def __enter__(self):
+                return iter(
+                    [
+                        b'{"response":"OK","done":false}\n',
+                        b'{"response":"","done":true,"prompt_eval_count":1,"eval_count":1}\n',
+                    ]
+                )
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(request, timeout):
+            payloads.append(json.loads(request.data.decode("utf-8")))
+            return Response()
+
+        with patch("urllib.request.urlopen", fake_urlopen):
+            client.generate(
+                "test-model",
+                "raw prompt",
+                temperature=0,
+                seed=1,
+                num_predict=1,
+                num_ctx=128,
+                keep_alive="1m",
+                raw=True,
+            )
+
+        self.assertTrue(payloads[0]["raw"])
+
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -74,6 +74,7 @@ class OllamaClient:
         num_ctx: int,
         keep_alive: str,
         reasoning: bool = False,
+        raw: bool = False,
     ) -> GenerateResult:
         request_payload: Dict[str, Any] = {
             "model": model,
@@ -87,6 +88,8 @@ class OllamaClient:
                 "num_ctx": num_ctx,
             },
         }
+        if raw:
+            request_payload["raw"] = True
         if not reasoning:
             request_payload["think"] = False
         body = json.dumps(request_payload).encode("utf-8")

@@ -155,6 +155,84 @@ WARMUP_PROMPT = Prompt(
 )
 
 
+def _cache_probe_generate(
+    client: OllamaClient,
+    model_name: str,
+    prompt: str,
+    *,
+    num_ctx: int,
+    keep_alive: str,
+    seed: int,
+    raw: bool = False,
+):
+    return client.generate(
+        model_name,
+        prompt,
+        temperature=0,
+        seed=seed,
+        num_predict=1,
+        num_ctx=num_ctx,
+        keep_alive=keep_alive,
+        reasoning=False,
+        raw=raw,
+    )
+
+
+def verify_prompt_cache_disabled(
+    client: OllamaClient,
+    model_name: str,
+    *,
+    num_ctx: int,
+    keep_alive: str,
+    seed: int,
+) -> int:
+    """Verify that a slot scrub prevents historical prompt restoration.
+
+    Recent Ollama llama-server builds keep an in-RAM prompt cache in addition
+    to the active KV-cache slot. A raw prompt replaces the active slot, so a
+    later templated prompt can only report cached tokens if the historical
+    cache is still enabled.
+    """
+    probe_id = uuid.uuid4().hex
+    probe_prompt = f"{probe_id} CarbonBench cache preflight. Reply OK."
+    try:
+        _cache_probe_generate(
+            client,
+            model_name,
+            probe_prompt,
+            num_ctx=num_ctx,
+            keep_alive=keep_alive,
+            seed=seed,
+        )
+        _cache_probe_generate(
+            client,
+            model_name,
+            f"CARBONBENCH-CACHE-SCRUB-{probe_id}",
+            num_ctx=num_ctx,
+            keep_alive=keep_alive,
+            seed=seed,
+            raw=True,
+        )
+        result = _cache_probe_generate(
+            client,
+            model_name,
+            probe_prompt,
+            num_ctx=num_ctx,
+            keep_alive=keep_alive,
+            seed=seed,
+        )
+        cached = result.prompt_eval_cached_count or 0
+    finally:
+        client.unload(model_name)
+    if cached:
+        raise RunError(
+            f"Prompt-cache preflight failed: Ollama restored {cached} prompt tokens after "
+            "an active-slot scrub. Restart Ollama with LLAMA_ARG_CACHE_RAM=0 before an "
+            "instrumented run; see the README prompt-cache setup section."
+        )
+    return cached
+
+
 def run_experiment(
     config: ExperimentConfig,
     db_path: Path,
@@ -221,6 +299,15 @@ def run_experiment(
         loaded_name = str(item.get("name") or item.get("model"))
         if loaded_name:
             client.unload(loaded_name)
+    print(f"Prompt-cache preflight: {models[0].name}...", flush=True)
+    verify_prompt_cache_disabled(
+        client,
+        models[0].name,
+        num_ctx=config.num_ctx,
+        keep_alive=config.keep_alive,
+        seed=config.seed,
+    )
+    print("Prompt-cache preflight: PASS (0 cached tokens after slot scrub)", flush=True)
     session_id = str(uuid.uuid4())
     raw_power_path = db_path.parent / f"{db_path.stem}-{session_id}.powermetrics.pliststream"
     collector = (
@@ -449,6 +536,19 @@ def _execute_one(
     )
     seed = config.seed + round_index
     requested_num_predict = int(prompt.metadata.get("num_predict_override", config.num_predict))
+    if not is_warmup:
+        try:
+            _cache_probe_generate(
+                client,
+                model.name,
+                f"CARBONBENCH-CACHE-SCRUB-{run_key[:16]}",
+                num_ctx=config.num_ctx,
+                keep_alive=config.keep_alive,
+                seed=seed,
+                raw=True,
+            )
+        except OllamaError as exc:
+            raise RunError(f"Could not scrub the active prompt-cache slot: {exc}") from exc
     started_at = utc_now()
     start = time.monotonic()
     status = "success"

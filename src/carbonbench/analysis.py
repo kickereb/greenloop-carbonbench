@@ -278,11 +278,11 @@ def verify_database(db_path: Path, config_hash: Optional[str] = None) -> Dict[st
                SUM(CASE WHEN r.status='success' THEN 1 ELSE 0 END) AS successful_attempts,
                SUM(CASE WHEN r.status!='success' THEN 1 ELSE 0 END) AS failed_attempts,
                COUNT(DISTINCT CASE WHEN {accepted_pred} THEN COALESCE(r.cell_key, r.run_key) END) AS accepted_cells,
-               SUM(CASE WHEN {accepted_pred} AND r.flags_json LIKE '%unexpected_model_load%' THEN 1 ELSE 0 END) AS loads,
-               SUM(CASE WHEN {accepted_pred} AND r.flags_json LIKE '%prompt_cache_hit%' THEN 1 ELSE 0 END) AS cache_hits,
-               SUM(CASE WHEN {accepted_pred} AND r.flags_json LIKE '%low_power_sample_coverage%' THEN 1 ELSE 0 END) AS low_coverage,
-               SUM(CASE WHEN {accepted_pred} AND r.flags_json LIKE '%invalid_power_sample%' THEN 1 ELSE 0 END) AS invalid_power,
-               SUM(CASE WHEN {accepted_pred} AND r.flags_json LIKE '%output_truncated%' AND p.category!='controlled_decode' THEN 1 ELSE 0 END) AS quality_truncations
+               SUM(CASE WHEN r.status='success' AND r.flags_json LIKE '%unexpected_model_load%' THEN 1 ELSE 0 END) AS loads,
+               SUM(CASE WHEN r.status='success' AND r.flags_json LIKE '%prompt_cache_hit%' THEN 1 ELSE 0 END) AS cache_hits,
+               SUM(CASE WHEN r.status='success' AND r.flags_json LIKE '%low_power_sample_coverage%' THEN 1 ELSE 0 END) AS low_coverage,
+               SUM(CASE WHEN r.status='success' AND r.flags_json LIKE '%invalid_power_sample%' THEN 1 ELSE 0 END) AS invalid_power,
+               SUM(CASE WHEN r.status='success' AND r.flags_json LIKE '%output_truncated%' AND p.category!='controlled_decode' THEN 1 ELSE 0 END) AS quality_truncations
         FROM runs r JOIN prompts p ON p.config_hash=r.config_hash AND p.prompt_id=r.prompt_id
         WHERE r.config_hash=? AND r.is_warmup=0
         """, (config_hash,)).fetchone())
